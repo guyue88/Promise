@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>手牵手写一个Promise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="./promise.js"></script>
+</head>
+<body>
+    <script>
+        console.log(1);
+        setTimeout(function () {
+            console.log(2)
+        });
+        let promise = new Promise(function (resolve, reject) {
+            console.log(3)
+            resolve(100)
+        }).then(function (data) {
+            console.log(data)
+        });
+        setTimeout(function () {
+            console.log(4)
+        });
+        console.log(5);
+
+        // var p = new Promise((resolve, reject)=>{
+        //     const a = 1;
+        //     a = 2;
+        // }).then(null, (err)=>{
+        //     console.log(err);
+        // });
+        
+        // var p = new Promise((resolve, reject)=>{
+        //     setTimeout(() => {
+        //         reject(2);
+        //     }, 1000);
+        // }).then(null, err =>{
+        //     console.log('c', err);
+        //     return 111;
+        // }).then(data=>{
+        //     console.log('a', data);
+        // }, err => {
+        //     console.log('b', err);
+        // });
+
+        // var p1 = new Promise((resolve, reject) => {
+        //     setTimeout(() => {
+        //         resolve('a');
+        //     }, 1000);
+        // });
+
+        // var p2 = new Promise((resolve, reject) => {
+        //     setTimeout(() => {
+        //         resolve('b');
+        //     }, 2000);
+        // });
+
+        // Promise.race([p1, p2])
+        //     .then(console.log, console.log)
+    </script>
+</body>
+</html>
