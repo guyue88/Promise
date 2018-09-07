@@ -4,11 +4,11 @@
 ## 使用方法
 支持UMD引入，返回Promise实现。
 ```javascript
-    let promise = new Promise(function (resolve, reject) {
-        resolve(100)
-    }).then(function (data) {
-        console.log(data)
-    });
+let promise = new Promise(function (resolve, reject) {
+    resolve(100)
+}).then(function (data) {
+    console.log(data)
+});
 ```
 
 ### API
