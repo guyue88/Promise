@@ -1,169 +1,171 @@
-var PENDING = 0;
-var FULFILLED = 1;
-var REJECTED = 2;
-
-var async = function () {
-    if (typeof process === 'object' && process !== null && typeof process.nextTick === 'function') {
-        return process.nextTick;
-    } else if (typeof setImmediate === 'function') {
-        return setImmediate;
+(function (window, factory) {
+    if (typeof exports === 'object') {
+        module.exports = factory();
+    } else if (typeof define === 'function' && define.amd) {
+        define(['Promise'], factory);
+    } else {
+        window.Promise = factory();
     }
-    return setTimeout;
-}();
+}(this, function () {
+    var PENDING = 0;
+    var FULFILLED = 1;
+    var REJECTED = 2;
 
-function isFunction(func) {
-    return typeof func === 'function';
-}
-
-function isArray(arr) {
-    return Object.prototype.toString.call(arr) === '[object Array]';
-}
-
-function Promise(executor) {
-    var self = this;
-    this._state = PENDING;
-    this._value = undefined;
-    this._onResolvedCallback = [];
-    this._onRejectedCallback = [];
-
-    function resolve(value) {
-        if (self._state === PENDING) {
-            self._state = FULFILLED;
-            self._value = value;
-            for (var i = 0; i < self._onResolvedCallback.length; i++) {
-                self._onResolvedCallback[i](value);
-            }
-            self._onResolvedCallback = [];
+    var async = function () {
+        if (typeof process === 'object' && process !== null && typeof process.nextTick === 'function') {
+            return process.nextTick;
+        } else if (typeof setImmediate === 'function') {
+            return setImmediate;
         }
+        return setTimeout;
+    }();
+
+    function isFunction(func) {
+        return typeof func === 'function';
     }
 
-    function reject(reason) {
-        if (self._state === PENDING) {
-            self._state = REJECTED;
-            self._value = reason;
-            for (var i = 0; i < self._onRejectedCallback.length; i++) {
-                self._onRejectedCallback[i](reason);
-            }
-            self._onRejectedCallback = [];
-        }
+    function isArray(arr) {
+        return Object.prototype.toString.call(arr) === '[object Array]';
     }
 
-    try{
-        // async(executor, null, resolve, reject);
-        executor(resolve, reject);
-    }catch(reason){
-        // async(reject, null, reason);
-        reject(reason);
-    }
-}
+    function Promise(executor) {
+        var self = this;
+        this._state = PENDING;
+        this._value = undefined;
+        this._onResolvedCallback = [];
+        this._onRejectedCallback = [];
 
-Promise.prototype.then = function(onResolved, onRejected) {
-    var self = this;
-    onResolved = isFunction(onResolved) ? onResolved : function (v) {return v;};
-    onRejected = isFunction(onRejected) ? onRejected : function (r) {throw r};
-
-    return new self.constructor(function (resolve, reject) {
-        function _resolve(value) {
-            try {
-                var p = onResolved(value);
-                if (p instanceof Promise) {
-                    p.then(resolve, reject);
-                } else {
-                    resolve(p);
+        function resolve(value) {
+            if (self._state === PENDING) {
+                self._state = FULFILLED;
+                self._value = value;
+                for (var i = 0; i < self._onResolvedCallback.length; i++) {
+                    self._onResolvedCallback[i](value);
                 }
-            } catch (e) {
-                reject(e);
+                self._onResolvedCallback = [];
             }
         }
 
-        function _reject(reason) {
-            try {
-                var p = onRejected(reason);
-                if (p instanceof Promise) {
-                    p.then(resolve, reject);
-                } else {
-                    resolve(p);
+        function reject(reason) {
+            if (self._state === PENDING) {
+                self._state = REJECTED;
+                self._value = reason;
+                for (var i = 0; i < self._onRejectedCallback.length; i++) {
+                    self._onRejectedCallback[i](reason);
                 }
-            } catch (e) {
-                reject(e);
+                self._onRejectedCallback = [];
             }
         }
 
-        if (self._state === PENDING) {
-            self._onResolvedCallback.push(_resolve);
-            self._onRejectedCallback.push(_reject);
-        } else if (self._state === FULFILLED) {
-            async(_resolve, null, self._value);
-            // _resolve(self._value);
-        }else if (self._state === REJECTED) {
-            async(_reject, null, self._value);
-            // _reject(self._value);
+        try {
+            // async(executor, null, resolve, reject);
+            executor(resolve, reject);
+        } catch (reason) {
+            // async(reject, null, reason);
+            reject(reason);
         }
-    });
-}
-
-Promise.prototype.catch = function (onRejected) {
-    return this.then(null, onRejected);
-}
-
-Promise.resolve = function (data) {
-    return new Promise(function(resolve) {
-        resolve(data);
-    });
-}
-
-Promise.reject = function (data) {
-    return new Promise(function (resolve, reject) {
-        reject(data);
-    });
-}
-
-Promise.all = function (promiseArr) {
-    if (!isArray(promiseArr)){
-        throw new TypeError("Promise.all need Array object as argument");
     }
-    return new Promise(function (resolve, reject) {
-        var count = len = promiseArr.length;
-        var result = [];
 
-        for(var i = 0; i < len; i++){
-            var promise = promiseArr[i];
-            promise.then((function (index) {
-                return function (value) {
-                    result[index] = value;
-                    if (--count === 0) {
-                        resolve(result);
+    Promise.prototype.then = function (onResolved, onRejected) {
+        var self = this;
+        onResolved = isFunction(onResolved) ? onResolved : function (v) {
+            return v;
+        };
+        onRejected = isFunction(onRejected) ? onRejected : function (r) {
+            throw r
+        };
+
+        return new self.constructor(function (resolve, reject) {
+            function _resolve(value) {
+                try {
+                    var p = onResolved(value);
+                    if (p instanceof Promise) {
+                        p.then(resolve, reject);
+                    } else {
+                        resolve(p);
                     }
+                } catch (e) {
+                    reject(e);
                 }
-            })(i), reject);
-        }
-    }); 
-}
+            }
 
-Promise.race = function (promiseArr) {
-    if (!isArray(promiseArr)) {
-        throw new TypeError("Promise.race need Array object as argument");
+            function _reject(reason) {
+                try {
+                    var p = onRejected(reason);
+                    if (p instanceof Promise) {
+                        p.then(resolve, reject);
+                    } else {
+                        resolve(p);
+                    }
+                } catch (e) {
+                    reject(e);
+                }
+            }
+
+            if (self._state === PENDING) {
+                self._onResolvedCallback.push(_resolve);
+                self._onRejectedCallback.push(_reject);
+            } else if (self._state === FULFILLED) {
+                async (_resolve, null, self._value);
+                // _resolve(self._value);
+            } else if (self._state === REJECTED) {
+                async (_reject, null, self._value);
+                // _reject(self._value);
+            }
+        });
     }
 
-    return new Promise(function (resolve, reject) {
-        var len = promiseArr.length;
-        for (var i = 0; i < len; i++) {
-            var promise = promiseArr[i];
-            promise.then(resolve, reject);
+    Promise.prototype.catch = function (onRejected) {
+        return this.then(null, onRejected);
+    }
+
+    Promise.resolve = function (data) {
+        return new Promise(function (resolve) {
+            resolve(data);
+        });
+    }
+
+    Promise.reject = function (data) {
+        return new Promise(function (resolve, reject) {
+            reject(data);
+        });
+    }
+
+    Promise.all = function (promiseArr) {
+        if (!isArray(promiseArr)) {
+            throw new TypeError("Promise.all need Array object as argument");
         }
-    });
-}
+        return new Promise(function (resolve, reject) {
+            var count = len = promiseArr.length;
+            var result = [];
 
+            for (var i = 0; i < len; i++) {
+                var promise = promiseArr[i];
+                promise.then((function (index) {
+                    return function (value) {
+                        result[index] = value;
+                        if (--count === 0) {
+                            resolve(result);
+                        }
+                    }
+                })(i), reject);
+            }
+        });
+    }
 
-Promise.deferred = Promise.defer = function () {
-    var dfd = {};
-    dfd.promise = new Promise(function (resolve, reject) {
-        dfd.resolve = resolve
-        dfd.reject = reject
-    });
-    return dfd;
-}
+    Promise.race = function (promiseArr) {
+        if (!isArray(promiseArr)) {
+            throw new TypeError("Promise.race need Array object as argument");
+        }
 
-if (typeof module !== "undefined" && module.exports) {
-    module.exports = Promise;
-}
+        return new Promise(function (resolve, reject) {
+            var len = promiseArr.length;
+            for (var i = 0; i < len; i++) {
+                var promise = promiseArr[i];
+                promise.then(resolve, reject);
+            }
+        });
+    }
+
+    return Promise;
+}));
